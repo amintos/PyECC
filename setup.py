@@ -25,31 +25,29 @@ __version__ = '0.0.1'
 
 # The base package metadata to be used by both distutils and setuptools
 METADATA = dict(
-    name = "distacc",
+    name = "ecc",
     version = __version__,
     packages = ['ecc'],
     author='Toni Mattis',
     author_email='solaris@live.de',
-    description='Distributed object access',
+    description='Pure Python implementation of an elliptic curve cryptosystem based on FIPS 186-3',
     license='MIT',
-    url='https://github.com/niccokunzmann/distacc',
-    keywords='distributed game programming',
+    url='https://github.com/niccokunzmann/ecc',
+    keywords='elliptic curve cryptosystem rabbit cipher',
 )
 
 # Extra package metadata to be used only if setuptools is installed
 SETUPTOOLS_METADATA = dict(
-    install_requires = ['setuptools', 'simplejson', 'oauth2', 'python-twitter', \
-                        'bson'],
+    install_requires = [],
     include_package_data = True,
     classifiers = [
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Communications',
-        'Topic :: Games/Entertainment', 
+        'Topic :: Security :: Cryptography', 
         'Topic :: Internet',
-        'Topic :: Software Development :: Object Brokering', 
     ],
 ##    test_suite = 'distacc_test',
 )
