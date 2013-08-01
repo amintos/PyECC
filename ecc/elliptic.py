@@ -21,7 +21,7 @@ E(GF(n)) takes the form y**2 == x**3 - p*x - q (mod n) for a prime n.
 
     A POINT in PROJECTIVE COORDINATES, usually denoted jp1, jp2, ...
     takes the form (X, Y, Z, Z**2, Z**3) where x = X / Z**2
-    and y = Y / z**3. This form is called Jacobian coordinates.
+    and y = Y / Z**3. This form is called Jacobian coordinates.
 
     The NEUTRAL element "0" or "O" is represented by None
     in both coordinate systems.
@@ -300,7 +300,10 @@ def muladdf(p, q, n, jp1, c1, jp2, c2):
                (neg(jp1, n),    neg(jp1n2, n),  neg(jp1p2, n)))
     res = None
 
-    for i, j in zip(s1, s2):
+    for k in xrange(len(s1)):
+        # Fix: faster than zip
+        i = s1[k]
+        j = s2[k]
         res = doublef(p, q, n, res)
         if i or j:
             res = addf(p, q, n, res, precomp[i][j])

@@ -1,3 +1,5 @@
+# Slightly modified to match PyECC and PyPy optimization requirements
+
 """
 A pure python (slow) implementation of rijndael with a decent interface
 
@@ -210,7 +212,7 @@ del mul4
 del cox
 del iG
 
-class rijndael:
+class rijndael(object):
     def __init__(self, key, block_size = 16):
         if block_size != 16 and block_size != 24 and block_size != 32:
             raise ValueError('Invalid block size: ' + str(block_size))
