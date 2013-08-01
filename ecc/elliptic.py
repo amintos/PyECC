@@ -73,6 +73,24 @@ E(GF(n)) takes the form y**2 == x**3 - p*x - q (mod n) for a prime n.
     Hence there is no addp() and doublep().
 '''
 
+# PYPY OPT DATA STRUCTURES -----------------------------------------------------
+
+def make_attribute(index):
+    def getter(self):
+        return self[index]
+    return property(getter)
+
+class ProjectiveCoordinate(tuple):
+
+    x = make_attribute(0)
+    y = make_attribute(1)
+    z = make_attribute(2)
+    zs = make_attribute(3)
+    zc = make_attribute(4)
+
+    def __new__(cls, x, y, z, zs, zc):
+        return tuple.__new__(cls, (x, y, z, zs, zc))
+
 # BASIC MATH -------------------------------------------------------------------
 
 def euclid(a, b):
@@ -110,7 +128,7 @@ def element(point, p, q, n):
 def to_projective(p):
     '''Transform point p given as (x, y) to projective coordinates'''
     if p:
-        return (p[0], p[1], 1, 1, 1)
+        return ProjectiveCoordinate(p[0], p[1], 1, 1, 1)
     else:
         return None     # Identity point (0)
 
@@ -123,8 +141,7 @@ def from_projective(jp, n):
 
 def neg(p, n):
     '''Compute the inverse point to p in any coordinate system'''
-    return (p[0], (n - p[1]) % n) + p[2:] if p else None
-
+    return ProjectiveCoordinate(p.x, (n - p.y) % n, *p[2:]) if p else None
 
 # POINT ADDITION ---------------------------------------------------------------
 
@@ -154,15 +171,12 @@ def add(p, q, n, p1, p2):
 def addf(p, q, n, jp1, jp2):
     '''Add jp1 and jp2 in projective (jacobian) coordinates.'''
     if jp1 and jp2:
-        
-        x1, y1, z1, z1s, z1c = jp1
-        x2, y2, z2, z2s, z2c = jp2
 
-        s1 = (y1 * z2c) % n
-        s2 = (y2 * z1c) % n
+        s1 = (jp1.y * jp2.zc) % n
+        s2 = (jp2.y * jp1.zc) % n
 
-        u1 = (x1 * z2s) % n
-        u2 = (x2 * z1s) % n
+        u1 = (jp1.x * jp2.zs) % n
+        u2 = (jp2.x * jp1.zs) % n
 
         if (u1 - u2) % n:
 
@@ -174,13 +188,13 @@ def addf(p, q, n, jp1, jp2):
 
             x3 = (-hc - 2 * u1 * hs + r * r) % n
             y3 = (-s1 * hc + r * (u1 * hs - x3)) % n
-            z3 = (z1 * z2 * h) % n
-            
+            z3 = (jp1.z * jp2.z * h) % n
+
             z3s = (z3 * z3) % n
             z3c = (z3s * z3) % n
-    
-            return (x3, y3, z3, z3s, z3c)
-        
+
+            return ProjectiveCoordinate(x3, y3, z3, z3s, z3c)
+
         else:
             if (s1 + s2) % n:
                 return doublef(p, q, n, jp1)
@@ -204,7 +218,7 @@ def doublef(p, q, n, jp):
     z3 = (2 * y1 * z1) % n
     z3p2 = (z3 * z3) % n
     
-    return x3, y3, z3, z3p2, (z3p2 * z3) % n
+    return ProjectiveCoordinate(x3, y3, z3, z3p2, (z3p2 * z3) % n)
 
 
 # SCALAR MULTIPLICATION --------------------------------------------------------
