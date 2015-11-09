@@ -305,7 +305,7 @@ if __name__ == '__main__':
     import time
 
     def test_overhead():
-        print('sender', 'receiver', '+bytes', '+enctime', '+dectime')
+        print('sender, receiver, +bytes, +enctime, +dectime')
         for s in [192, 224, 256, 384, 521]:
             sender = Key.generate(s)
             for r in [192, 224, 256, 384, 521]:
@@ -316,6 +316,6 @@ if __name__ == '__main__':
                 t = time.time()
                 receiver.auth_decrypt(e, sender)
                 t2 = time.time() - t
-                print(s, r, len(e), t1, t2)
+                print('{}, {}, {}, {}, {}'.format(s, r, len(e), t1, t2))
 
     test_overhead()

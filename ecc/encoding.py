@@ -22,8 +22,8 @@ def enc_long(n):
 def enc_int(n):
     '''Encodes an integer n to a 4-byte string.
     Big endian byte order is used.'''
-    return chr((n >> 24) & 0xFF) + chr((n >> 16) & 0xFF) \
-        + chr((n >> 8) & 0xFF) + chr(n & 0xFF)
+    return (chr((n >> 24) & 0xFF) + chr((n >> 16) & 0xFF) +
+            chr((n >> 8) & 0xFF) + chr(n & 0xFF))
 
 
 def enc_fixed_long(n, length):
