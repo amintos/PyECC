@@ -1,12 +1,14 @@
+#!/usr/bin/python
+# coding=utf-8
 
-# --- ELLIPTIC CURVE MATH ------------------------------------------------------
+# --- ELLIPTIC CURVE MATH -----------------------------------------------------
 #
 #   curve definition:   y^2 = x^3 - p*x - q
 #   over finite field:  Z/nZ* (prime residue classes modulo a prime number n)
 #
 #
 #   COPYRIGHT (c) 2010 by Toni Mattis <solaris@live.de>
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 '''
 Module for elliptic curve arithmetic over a prime field GF(n).
@@ -61,7 +63,7 @@ E(GF(n)) takes the form y**2 == x**3 - p*x - q (mod n) for a prime n.
     doublef()           Optimized point doubling.
     mulf()              Highly optimized scalar multiplication.
     muladdf()           Highly optimized addition of two products.
-    
+
     The following functions use the optimized ones above but consume
     and output (x, y)-coordinates for a more convenient usage:
 
@@ -73,7 +75,8 @@ E(GF(n)) takes the form y**2 == x**3 - p*x - q (mod n) for a prime n.
     Hence there is no addp() and doublep().
 '''
 
-# BASIC MATH -------------------------------------------------------------------
+
+# BASIC MATH ------------------------------------------------------------------
 
 def euclid(a, b):
     '''Solve x*a + y*b = ggt(a, b) and return (x, y, ggt(a, b))'''
@@ -87,6 +90,7 @@ def euclid(a, b):
         y, yy = yy - q * y, y
     return xx, yy, a
 
+
 def inv(a, n):
     '''Perform inversion 1/a modulo n. a and n should be COPRIME.'''
     # coprimality is not checked here in favour of performance
@@ -95,9 +99,11 @@ def inv(a, n):
         i += n
     return i
 
+
 def curve_q(x, y, p, n):
     '''Find curve parameter q mod n having point (x, y) and parameter p'''
     return ((x * x - p) * x - y * y) % n
+
 
 def element(point, p, q, n):
     '''Test, whether the given point is on the curve (p, q, n)'''
@@ -107,12 +113,14 @@ def element(point, p, q, n):
     else:
         return True
 
+
 def to_projective(p):
     '''Transform point p given as (x, y) to projective coordinates'''
     if p:
         return (p[0], p[1], 1, 1, 1)
     else:
         return None     # Identity point (0)
+
 
 def from_projective(jp, n):
     '''Transform a point from projective coordinates to (x, y) mod n'''
@@ -121,12 +129,13 @@ def from_projective(jp, n):
     else:
         return None     # Identity point (0)
 
+
 def neg(p, n):
     '''Compute the inverse point to p in any coordinate system'''
     return (p[0], (n - p[1]) % n) + p[2:] if p else None
 
 
-# POINT ADDITION ---------------------------------------------------------------
+# POINT ADDITION --------------------------------------------------------------
 
 # addition of points in y**2 = x**3 - p*x - q over <Z/nZ*; +>
 def add(p, q, n, p1, p2):
@@ -154,7 +163,7 @@ def add(p, q, n, p1, p2):
 def addf(p, q, n, jp1, jp2):
     '''Add jp1 and jp2 in projective (jacobian) coordinates.'''
     if jp1 and jp2:
-        
+
         x1, y1, z1, z1s, z1c = jp1
         x2, y2, z2, z2s, z2c = jp2
 
@@ -175,12 +184,12 @@ def addf(p, q, n, jp1, jp2):
             x3 = (-hc - 2 * u1 * hs + r * r) % n
             y3 = (-s1 * hc + r * (u1 * hs - x3)) % n
             z3 = (z1 * z2 * h) % n
-            
+
             z3s = (z3 * z3) % n
             z3c = (z3s * z3) % n
-    
+
             return (x3, y3, z3, z3s, z3c)
-        
+
         else:
             if (s1 + s2) % n:
                 return doublef(p, q, n, jp1)
@@ -189,13 +198,14 @@ def addf(p, q, n, jp1, jp2):
     else:
         return jp1 if jp1 else jp2
 
+
 # explicit point doubling using redundant coordinates
 def doublef(p, q, n, jp):
     '''Double jp in projective (jacobian) coordinates'''
     if not jp:
         return None
     x1, y1, z1, z1p2, z1p3 = jp
-    
+
     y1p2 = (y1 * y1) % n
     a = (4 * x1 * y1p2) % n
     b = (3 * x1 * x1 - p * z1p3 * z1) % n
@@ -203,11 +213,11 @@ def doublef(p, q, n, jp):
     y3 = (b * (a - x3) - 8 * y1p2 * y1p2) % n
     z3 = (2 * y1 * z1) % n
     z3p2 = (z3 * z3) % n
-    
+
     return x3, y3, z3, z3p2, (z3p2 * z3) % n
 
 
-# SCALAR MULTIPLICATION --------------------------------------------------------
+# SCALAR MULTIPLICATION -------------------------------------------------------
 
 # scalar multiplication p1 * c = p1 + p1 + ... + p1 (c times) in O(log(n))
 def mul(p, q, n, p1, c):
@@ -227,7 +237,8 @@ def mul(p, q, n, p1, c):
 def _gbd(n):
     '''Compute second greatest base-2 divisor'''
     i = 1
-    if n <= 0: return 0
+    if n <= 0:
+        return 0
     while not n % i:
         i <<= 1
     return i >> 2
@@ -245,7 +256,7 @@ def _signed_bin(n):
     r = []
     while n > 1:
         if n & 1:
-            cp = _gbd(n + 1) 
+            cp = _gbd(n + 1)
             cn = _gbd(n - 1)
             if cp > cn:         # -1 leaves more zeroes -> subtract -1 (= +1)
                 r.append(-1)
@@ -274,6 +285,7 @@ def mulf(p, q, n, jp1, c):
             res = addf(p, q, n, res, jp1) if s > 0 else \
                   addf(p, q, n, res, jp0)
     return res
+
 
 # Encapsulates mulf() in order to enable flat coordinates (x, y)
 def mulp(p, q, n, p1, c):
@@ -306,6 +318,7 @@ def muladdf(p, q, n, jp1, c1, jp2, c2):
             res = addf(p, q, n, res, precomp[i][j])
     return res
 
+
 # Encapsulate muladdf()
 def muladdp(p, q, n, p1, c1, p2, c2):
     '''Efficiently compute c1 * p1 + c2 * p2 in (x, y)-coordinates'''
@@ -313,7 +326,7 @@ def muladdp(p, q, n, p1, c1, p2, c2):
                                    to_projective(p1), c1,
                                    to_projective(p2), c2), n)
 
-# POINT COMPRESSION ------------------------------------------------------------
+# POINT COMPRESSION -----------------------------------------------------------
 
 # Compute the square root modulo n
 
@@ -324,6 +337,7 @@ def sign_bit(p1):
     '''Return the signedness of a point p1'''
     return p1[1] % 2 if p1 else 0
 
+
 # Reconstruct the y-coordinate when curve parameters, x and the sign-bit of
 # the y coordinate are given:
 def y_from_x(x, p, q, n, sign):
@@ -331,21 +345,20 @@ def y_from_x(x, p, q, n, sign):
 
     # optimized form of (x**3 - p*x - q) % n
     a = (((x * x) % n - p) * x - q) % n
-    
-    
+
 
 if __name__ == "__main__":
     import rsa
     import time
 
     t = time.time()
-    n = rsa.get_prime(256/8, 20)
+    n = rsa.get_prime(256 / 8, 20)
     tp = time.time() - t
     p = rsa.random.randint(1, n)
     p1 = (rsa.random.randint(1, n), rsa.random.randint(1, n))
     q = curve_q(p1[0], p1[1], p, n)
-    r1 = rsa.random.randint(1,n)
-    r2 = rsa.random.randint(1,n)
+    r1 = rsa.random.randint(1, n)
+    r2 = rsa.random.randint(1, n)
     q1 = mulp(p, q, n, p1, r1)
     q2 = mulp(p, q, n, p1, r2)
     s1 = mulp(p, q, n, q1, r2)
@@ -353,8 +366,8 @@ if __name__ == "__main__":
     s1 == s2
     tt = time.time() - t
 
-    def test(tcount, bits = 256):
-        n = rsa.get_prime(bits/8, 20)
+    def test(tcount, bits=256):
+        n = rsa.get_prime(bits / 8, 20)
         p = rsa.random.randint(1, n)
         p1 = (rsa.random.randint(1, n), rsa.random.randint(1, n))
         q = curve_q(p1[0], p1[1], p, n)
@@ -376,6 +389,3 @@ if __name__ == "__main__":
         t2 = time.time() - t
 
         return tcount, t1, t2
-        
-
-        

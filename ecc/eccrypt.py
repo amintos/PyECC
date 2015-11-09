@@ -1,3 +1,5 @@
+# coding=utf-8
+
 #   Elliptic Curve Hybrid Encryption Scheme
 #
 #   COPYRIGHT (c) 2010 by Toni Mattis <solaris@live.de>
@@ -9,8 +11,10 @@ from encoding import enc_long
 from random import SystemRandom
 from Rabbit import Rabbit
 
+
 # important for cryptographically secure random numbers:
 random = SystemRandom()
+
 
 # Encryption Algorithm:
 # ---------------------
@@ -23,9 +27,7 @@ random = SystemRandom()
 # 4. symmetrically encrypt M to M' using SG's x-coordinate as key.
 #
 # Return: Ciphertext M', temporary key KG
-
-
-def encrypt(message, qk, encrypter = Rabbit):
+def encrypt(message, qk, encrypter=Rabbit):
     '''Encrypt a message using public key qk => (ciphertext, temp. pubkey)'''
     bits, q = qk
     try:
@@ -34,12 +36,13 @@ def encrypt(message, qk, encrypter = Rabbit):
             raise ValueError, "Key size %s not suitable for encryption" % bits
     except KeyError:
         raise ValueError, "Key size %s not implemented" % bits
-    
+
     k = random.randint(1, n - 1)        # temporary private key k
     kg = mulp(cp, cq, cn, g, k)         # temporary public key k*G
     sg = mulp(cp, cq, cn, q, k)         # shared secret k*Q = k*d*G
 
     return encrypter(enc_long(sg[0])).encrypt(message), kg
+
 
 # Decryption Algorithm:
 # ---------------------
@@ -50,8 +53,7 @@ def encrypt(message, qk, encrypter = Rabbit):
 # 2. symmetrically decrypt M' to M using SG's x-coordinate as key.
 #
 # Return: M
-
-def decrypt(message, kg, dk, decrypter = Rabbit):
+def decrypt(message, kg, dk, decrypter=Rabbit):
     '''Decrypt a message using temp. public key kg and private key dk'''
     bits, d = dk
     try:
@@ -61,5 +63,3 @@ def decrypt(message, kg, dk, decrypter = Rabbit):
 
     sg = mulp(cp, cq, cn, kg, d)        # shared secret d*(k*G) = k*d*G
     return decrypter(enc_long(sg[0])).decrypt(message)
-    
-    

@@ -1,10 +1,15 @@
+# coding=utf-8
+
 '''
 This module implements simple prime generation and primality testing.
 '''
 
 from random import SystemRandom
-random = SystemRandom()
 from os import urandom
+
+
+random = SystemRandom()
+
 
 def exp(x, n, m):
     '''Efficiently compute x ** n mod m'''
@@ -22,33 +27,33 @@ def exp(x, n, m):
 
 def prime(n, k):
     '''Checks whether n is probably prime (with probability 1 - 4**(-k)'''
-    
+
     if n % 2 == 0:
         return False
-    
+
     d = n - 1
     s = 0
-    
+
     while d % 2 == 0:
         s += 1
         d /= 2
-        
+
     for i in xrange(k):
-        
+
         a = long(2 + random.randint(0, n - 4))
         x = exp(a, d, n)
         if (x == 1) or (x == n - 1):
             continue
-        
+
         for r in xrange(1, s):
             x = (x * x) % n
-            
+
             if x == 1:
                 return False
-            
+
             if x == n - 1:
                 break
-            
+
         else:
             return False
     return True
@@ -58,7 +63,7 @@ def prime(n, k):
 
 def get_prime(size, accuracy):
     '''Generate a pseudorandom prime number with the specified size (bytes).'''
-    
+
     while 1:
 
         # read some random data from the operating system
