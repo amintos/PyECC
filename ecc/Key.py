@@ -170,12 +170,12 @@ prime having great security characteristics, 521 bits are preferred
 over a constructed 512 bit field.)
 """
 
-import ecdsa
+from . import ecdsa
 import hashlib
 
-from encoding import *
-from eccrypt import *
-from SecurityViolationException import *
+from .encoding import *
+from .eccrypt import *
+from .SecurityViolationException import *
 
 
 class Key:
@@ -217,7 +217,7 @@ class Key:
         if kid == k.keyid():
             return k
         else:
-            raise ValueError, "Invalid Key ID"
+            raise ValueError("Invalid Key ID")
 
     # --- IDENTIFICATION AND VALIDATION ---------------------------------------
 
@@ -262,7 +262,7 @@ class Key:
             s = ecdsa.sign(h, self._priv)
             return enc_point(s)
         else:
-            raise AttributeError, 'Private key needed for signing.'
+            raise AttributeError('Private key needed for signing.')
 
     def verify(self, data, sig, hashfunc='sha256'):
         '''Verify the signature of data using the specified hash function'''
@@ -275,11 +275,11 @@ class Key:
     def encrypt(self, data):
         '''Encrypt a message using this public key'''
         ctext, mkey = encrypt(data, self._pub)
-        return Encoder().point(mkey).str(ctext, 4).out()
+        return Encoder().point(mkey).bytes(ctext, 4).out()
 
     def decrypt(self, data):
         '''Decrypt an encrypted message using this private key'''
-        mkey, ctext = Decoder(data).point().str(4).out()
+        mkey, ctext = Decoder(data).point().bytes(4).out()
         return decrypt(ctext, mkey, self._priv)
 
     # --- AUTHENTICATED ENCRYPTION --------------------------------------------
@@ -288,16 +288,16 @@ class Key:
         '''Sign and encrypt a message'''
         sgn = self.sign(data)
         ctext, mkey = encrypt(data, receiver._pub)
-        return Encoder().point(mkey).str(ctext, 4).str(sgn, 2).out()
+        return Encoder().point(mkey).bytes(ctext, 4).bytes(sgn, 2).out()
 
     def auth_decrypt(self, data, source):
         '''Decrypt and verify a message'''
-        mkey, ctext, sgn = Decoder(data).point().str(4).str(2).out()
+        mkey, ctext, sgn = Decoder(data).point().bytes(4).bytes(2).out()
         text = decrypt(ctext, mkey, self._priv)
         if source.verify(text, sgn):
             return text
         else:
-            raise SecurityViolationException, 'Invalid Signature'
+            raise SecurityViolationException('Invalid Signature')
 
 
 if __name__ == '__main__':
@@ -311,7 +311,7 @@ if __name__ == '__main__':
             for r in [192, 224, 256, 384, 521]:
                 receiver = Key.generate(r)
                 t = time.time()
-                e = sender.auth_encrypt('', receiver)
+                e = sender.auth_encrypt(b'', receiver)
                 t1 = time.time() - t
                 t = time.time()
                 receiver.auth_decrypt(e, sender)

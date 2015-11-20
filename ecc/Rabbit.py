@@ -11,9 +11,12 @@
 #
 # ------------------------------------------------------------------------------
 
-
 WORDSIZE = 0x100000000
 
+try:
+    from .python_versions import *
+except ImportError:
+    from  python_versions import *
 
 def rot08(x):
     return ((x << 8) & 0xFFFFFFFF) | (x >> 24)
@@ -42,10 +45,16 @@ class Rabbit:
             # if len(key) > 16 bytes only the first 16 will be considered
             k = [ord(key[i + 1]) | (ord(key[i]) << 8)
                  for i in range(14, -1, -2)]
-        else:
+        elif isinstance(key, bytes):
+            # This is only the case in Python 3 since str == bytes in Python 2
+            k = [(key[i + 1]) | ((key[i]) << 8)
+                 for i in range(14, -1, -2)]
+        elif isinstance(key, int):
             # k[0] = least significant 16 bits
             # k[7] = most significant 16 bits
             k = [(key >> i) & 0xFFFF for i in range(0, 128, 16)]
+        else:
+            raise ValueError("key must be either int, bytes or str")
 
         # State and counter initialization
         x = [(k[(j + 5) % 8] << 16) | k[(j + 4) % 8] if j & 1 else
@@ -193,7 +202,7 @@ class Rabbit:
     def encrypt(self, data):
         '''Encrypt/Decrypt data of arbitrary length.'''
 
-        res = ""
+        res = b""
         b = self._buf
         j = self._buf_bytes
         next = self.__next__
@@ -204,7 +213,7 @@ class Rabbit:
                 j = 16
                 next()
                 b = derive()
-            res += chr(ord(c) ^ (b & 0xFF))
+            res += integer_to_bytes(byte_to_integer(c) ^ (b & 0xFF))
             j -= 1
             b >>= 1
         self._buf = b

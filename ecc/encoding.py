@@ -5,16 +5,18 @@
 #
 
 import io
-
+from .python_versions import byte_to_integer
+import struct
 
 # Big-Endian Encoding
 
 def enc_long(n):
     '''Encodes arbitrarily large number n to a sequence of bytes.
     Big endian byte order is used.'''
-    s = ""
+    assert n >= 0
+    s = struct.pack('')
     while n > 0:
-        s = chr(n & 0xFF) + s
+        s = struct.pack('B', n & 0xFF) + s
         n >>= 8
     return s
 
@@ -22,20 +24,21 @@ def enc_long(n):
 def enc_int(n):
     '''Encodes an integer n to a 4-byte string.
     Big endian byte order is used.'''
-    return (chr((n >> 24) & 0xFF) + chr((n >> 16) & 0xFF) +
-            chr((n >> 8) & 0xFF) + chr(n & 0xFF))
+    assert n >= 0
+    return struct.pack(">L", n)
 
+ZERO_BYTE = struct.pack('B', 0)
 
 def enc_fixed_long(n, length):
-    return enc_long(n)[:length].rjust(length, '\x00')
+    return enc_long(n)[:length].rjust(length, ZERO_BYTE)
 
 
-def dec_long(s):
-    '''Decodes s to its numeric representation.
+def dec_long(b):
+    '''Decodes b to its numeric representation.
     Big endian byte order is used.'''
     n = 0
-    for c in s:
-        n = (n << 8) | ord(c)
+    for c in b:
+        n = (n << 8) | byte_to_integer(c)
     return n
 
 # dec_int not necessary,
@@ -70,22 +73,22 @@ def enc_point(p):
     sy = enc_long(y)
     diff = len(sx) - len(sy)
     if diff > 0:
-        sy = '\x00' * diff + sy
+        sy = ZERO_BYTE * diff + sy
     elif diff < 0:
-        sx = '\x00' * -diff + sx
+        sx = ZERO_BYTE * -diff + sx
     return sx + sy
 
 
 def dec_point(s):
     '''Decode an even length string s to a point(x, y)'''
-    d = len(s) / 2
+    d = len(s) // 2
     return (dec_long(s[:d]), dec_long(s[d:]))
 
 
 class Encoder:
 
     def __init__(self):
-        self._io = io.StringIO()
+        self._io = io.BytesIO()
 
     def int(self, n, size=4):
         self._io.write(enc_fixed_long(n, size))
@@ -96,7 +99,7 @@ class Encoder:
         self._io.write(enc_fixed_long(len(lstr), pre) + lstr)
         return self
 
-    def str(self, s, pre=2):
+    def bytes(self, s, pre=2):
         self._io.write(enc_fixed_long(len(s), pre) + s)
         return self
 
@@ -117,7 +120,7 @@ class Encoder:
 class Decoder:
 
     def __init__(self, data, offset=0):
-        self._io = io.StringIO(data)
+        self._io = io.BytesIO(data)
         self._io.seek(offset)
         self._res = []
         self._limit = None
@@ -139,7 +142,7 @@ class Decoder:
         self._res.append(dec_long(self._io.read(llen)))
         return self._ret()
 
-    def str(self, pre=2):
+    def bytes(self, pre=2):
         llen = dec_long(self._io.read(pre))
         self._res.append(self._io.read(llen))
         return self._ret()
