@@ -49,7 +49,7 @@ class Rabbit:
             # This is only the case in Python 3 since str == bytes in Python 2
             k = [(key[i + 1]) | ((key[i]) << 8)
                  for i in range(14, -1, -2)]
-        elif isinstance(key, int):
+        elif is_integer(key):
             # k[0] = least significant 16 bits
             # k[7] = most significant 16 bits
             k = [(key >> i) & 0xFFFF for i in range(0, 128, 16)]
@@ -202,7 +202,7 @@ class Rabbit:
     def encrypt(self, data):
         '''Encrypt/Decrypt data of arbitrary length.'''
 
-        res = b""
+        res = []
         b = self._buf
         j = self._buf_bytes
         next = self.__next__
@@ -213,12 +213,12 @@ class Rabbit:
                 j = 16
                 next()
                 b = derive()
-            res += integer_to_bytes(byte_to_integer(c) ^ (b & 0xFF))
+            res.append(integer_to_bytes(byte_to_integer(c) ^ (b & 0xFF)))
             j -= 1
             b >>= 1
         self._buf = b
         self._buf_bytes = j
-        return res
+        return b''.join(res)
 
     decrypt = encrypt
 
@@ -278,7 +278,7 @@ if __name__ == '__main__':
         '''Measure time for encrypting n bytes => (total, bytes per second)'''
 
         r = Rabbit(0)
-        x = 'x' * n
+        x = b'x' * n
         t = time.time()
         r.encrypt(x)
         t = time.time() - t
