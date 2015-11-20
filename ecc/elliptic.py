@@ -348,17 +348,24 @@ def y_from_x(x, p, q, n, sign):
 
 
 if __name__ == "__main__":
-    import rsa
+    try:
+        import rsa
+    except ImportError:
+        print("""Install the rsa module to run these tests: 
+        pip install rsa
+        The module can be found at https://pypi.python.org/pypi/rsa .""")
+        
     import time
+    import random
 
     t = time.time()
-    n = rsa.get_prime(256 / 8, 20)
+    n = rsa.prime.getprime(256)
     tp = time.time() - t
-    p = rsa.random.randint(1, n)
-    p1 = (rsa.random.randint(1, n), rsa.random.randint(1, n))
+    p = random.randint(1, n)
+    p1 = (random.randint(1, n), random.randint(1, n))
     q = curve_q(p1[0], p1[1], p, n)
-    r1 = rsa.random.randint(1, n)
-    r2 = rsa.random.randint(1, n)
+    r1 = random.randint(1, n)
+    r2 = random.randint(1, n)
     q1 = mulp(p, q, n, p1, r1)
     q2 = mulp(p, q, n, p1, r2)
     s1 = mulp(p, q, n, q1, r2)
@@ -367,15 +374,15 @@ if __name__ == "__main__":
     tt = time.time() - t
 
     def test(tcount, bits=256):
-        n = rsa.get_prime(bits / 8, 20)
-        p = rsa.random.randint(1, n)
-        p1 = (rsa.random.randint(1, n), rsa.random.randint(1, n))
+        n = rsa.prime.getprime(bits)
+        p = random.randint(1, n)
+        p1 = (random.randint(1, n), random.randint(1, n))
         q = curve_q(p1[0], p1[1], p, n)
-        p2 = mulp(p, q, n, p1, rsa.random.randint(1, n))
+        p2 = mulp(p, q, n, p1, random.randint(1, n))
 
-        c1 = [rsa.random.randint(1, n) for i in xrange(tcount)]
-        c2 = [rsa.random.randint(1, n) for i in xrange(tcount)]
-        c = zip(c1, c2)
+        c1 = [random.randint(1, n) for i in range(tcount)]
+        c2 = [random.randint(1, n) for i in range(tcount)]
+        c = list(zip(c1, c2))
 
         t = time.time()
         for i, j in c:
@@ -389,3 +396,5 @@ if __name__ == "__main__":
         t2 = time.time() - t
 
         return tcount, t1, t2
+
+    test(10)
