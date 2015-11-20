@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# coding=utf-8
+
 #   ====================================================================
 #
 #       ELLIPTIC CURVE KEY ENCAPSULATION
@@ -67,7 +70,7 @@ operations:
                     matches the signature (argument 2) issued
                     by the owner of this key. A falsification
                     can have multiple causes:
-                    
+
                     - Data, public key or signature were altered
                       during transmission/storage.
                     - The siganture was not issued by the owner
@@ -76,7 +79,7 @@ operations:
                     - The signature was issued for different data.
                     - The signature was issued using a different
                       hash function. Another hash function may work.
-                      
+
                     Optionally, the name of a hash algorithm
                     can be provided. For hash names see below.
 
@@ -130,8 +133,7 @@ Additional functions:
 *) The encryption used here depends on the "eccrypt" module imported
 by this module. Default implementation should use RABBIT as cipher
 and do the asymmetric part using an optimized El-Gamal scheme.
-        
-            
+
 
 Hash functions
 --------------
@@ -168,17 +170,19 @@ prime having great security characteristics, 521 bits are preferred
 over a constructed 512 bit field.)
 """
 
-from encoding import *
-from eccrypt import *
 import ecdsa
 import hashlib
+
+from encoding import *
+from eccrypt import *
 from SecurityViolationException import *
+
 
 class Key:
 
-    # --- KEY SETUP ------------------------------------------------------------
+    # --- KEY SETUP -----------------------------------------------------------
 
-    def __init__(self, public_key, private_key = None):
+    def __init__(self, public_key, private_key=None):
         '''Create a Key(pair) from numeric keys.'''
         self._pub = public_key
         self._priv = private_key
@@ -190,9 +194,9 @@ class Key:
         '''Generate a new ECDSA keypair'''
         return Key(*ecdsa.keypair(bits))
 
-    # --- BINARY REPRESENTATION ------------------------------------------------
+    # --- BINARY REPRESENTATION -----------------------------------------------
 
-    def encode(self, include_private = False):
+    def encode(self, include_private=False):
         '''Returns a strict binary representation of this Key'''
         e = Encoder().int(self.keyid(), 8)
         e.int(self._pub[0], 2).point(self._pub[1], 2)
@@ -204,7 +208,6 @@ class Key:
 
     def compress(self):
         '''Returns a compact public key representation'''
-        
 
     @staticmethod
     def decode(s):
@@ -216,7 +219,7 @@ class Key:
         else:
             raise ValueError, "Invalid Key ID"
 
-    # --- IDENTIFICATION AND VALIDATION ----------------------------------------
+    # --- IDENTIFICATION AND VALIDATION ---------------------------------------
 
     def private(self):
         '''Checks whether Key object contains private key'''
@@ -233,11 +236,11 @@ class Key:
         else:
             return False
 
-    def fingerprint(self, as_hex = True, hashfunc = 'sha1'):
+    def fingerprint(self, as_hex=True, hashfunc='sha1'):
         '''Get the public key fingerprint'''
         if hashfunc in self._fingerprint:
             return self._fingerprint[hashfunc] if not as_hex else \
-                   self._fingerprint[hashfunc].encode("hex")
+                   self._fingerprint[hashfunc].encode('hex')
         else:
             h = hashlib.new(hashfunc, enc_point(self._pub[1]))
             d = h.digest()
@@ -250,24 +253,24 @@ class Key:
             self._id = dec_long(self.fingerprint(False, 'sha1')[:8])
         return self._id
 
-    # --- DIGITAL SIGNATURES ---------------------------------------------------
+    # --- DIGITAL SIGNATURES --------------------------------------------------
 
-    def sign(self, data, hashfunc = 'sha256'):
+    def sign(self, data, hashfunc='sha256'):
         '''Sign data using the specified hash function'''
         if self._priv:
             h = dec_long(hashlib.new(hashfunc, data).digest())
             s = ecdsa.sign(h, self._priv)
             return enc_point(s)
         else:
-            raise AttributeError, "Private key needed for signing."
+            raise AttributeError, 'Private key needed for signing.'
 
-    def verify(self, data, sig, hashfunc = 'sha256'):
+    def verify(self, data, sig, hashfunc='sha256'):
         '''Verify the signature of data using the specified hash function'''
         h = dec_long(hashlib.new(hashfunc, data).digest())
         s = dec_point(sig)
         return ecdsa.verify(h, s, self._pub)
 
-    # --- HYBRID ENCRYPTION ----------------------------------------------------
+    # --- HYBRID ENCRYPTION ---------------------------------------------------
 
     def encrypt(self, data):
         '''Encrypt a message using this public key'''
@@ -278,8 +281,8 @@ class Key:
         '''Decrypt an encrypted message using this private key'''
         mkey, ctext = Decoder(data).point().str(4).out()
         return decrypt(ctext, mkey, self._priv)
-        
-    # --- AUTHENTICATED ENCRYPTION ---------------------------------------------
+
+    # --- AUTHENTICATED ENCRYPTION --------------------------------------------
 
     def auth_encrypt(self, data, receiver):
         '''Sign and encrypt a message'''
@@ -294,27 +297,25 @@ class Key:
         if source.verify(text, sgn):
             return text
         else:
-            raise SecurityViolationException, "Invalid Signature"
+            raise SecurityViolationException, 'Invalid Signature'
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
 
     import time
 
     def test_overhead():
-        print "sender", "receiver", "+bytes", "+enctime", "+dectime"
+        print('sender, receiver, +bytes, +enctime, +dectime')
         for s in [192, 224, 256, 384, 521]:
             sender = Key.generate(s)
             for r in [192, 224, 256, 384, 521]:
                 receiver = Key.generate(r)
                 t = time.time()
-                e = sender.auth_encrypt("", receiver)
+                e = sender.auth_encrypt('', receiver)
                 t1 = time.time() - t
                 t = time.time()
                 receiver.auth_decrypt(e, sender)
                 t2 = time.time() - t
-                print s, r, len(e), t1, t2
+                print('{}, {}, {}, {}, {}'.format(s, r, len(e), t1, t2))
 
-                
-                
-    
+    test_overhead()

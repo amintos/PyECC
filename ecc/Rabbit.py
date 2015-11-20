@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# coding=utf-8
+
 # ------------------------------------------------------------------------------
 #
 #   R A B B I T   Stream Cipher
@@ -11,8 +14,14 @@
 
 WORDSIZE = 0x100000000
 
-rot08 = lambda x: ((x <<  8) & 0xFFFFFFFF) | (x >> 24)
-rot16 = lambda x: ((x << 16) & 0xFFFFFFFF) | (x >> 16)
+
+def rot08(x):
+    return ((x << 8) & 0xFFFFFFFF) | (x >> 24)
+
+
+def rot16(x):
+    return ((x << 16) & 0xFFFFFFFF) | (x >> 16)
+
 
 def _nsf(u, v):
     '''Internal non-linear state transition'''
@@ -20,11 +29,12 @@ def _nsf(u, v):
     s = s * s
     return (s ^ (s >> 32)) % WORDSIZE
 
+
 class Rabbit:
 
-    def __init__(self, key, iv = None):
+    def __init__(self, key, iv=None):
         '''Initialize Rabbit cipher using a 128 bit integer/string'''
-        
+
         if isinstance(key, str):
             # interpret key string in big endian byte order
             if len(key) < 16:
@@ -36,19 +46,19 @@ class Rabbit:
             # k[0] = least significant 16 bits
             # k[7] = most significant 16 bits
             k = [(key >> i) & 0xFFFF for i in xrange(0, 128, 16)]
-            
+
         # State and counter initialization
         x = [(k[(j + 5) % 8] << 16) | k[(j + 4) % 8] if j & 1 else
              (k[(j + 1) % 8] << 16) | k[j] for j in xrange(8)]
         c = [(k[j] << 16) | k[(j + 1) % 8] if j & 1 else
              (k[(j + 4) % 8] << 16) | k[(j + 5) % 8] for j in xrange(8)]
-        
+
         self.x = x
         self.c = c
         self.b = 0
         self._buf = 0           # output buffer
         self._buf_bytes = 0     # fill level of buffer
-        
+
         self.next()
         self.next()
         self.next()
@@ -56,23 +66,23 @@ class Rabbit:
 
         for j in xrange(8):
             c[j] ^= x[(j + 4) % 8]
-        
+
         self.start_x = self.x[:]    # backup initial key for IV/reset
         self.start_c = self.c[:]
         self.start_b = self.b
 
-        if iv != None:
+        if iv is not None:
             self.set_iv(iv)
 
-    def reset(self, iv = None):
+    def reset(self, iv=None):
         '''Reset the cipher and optionally set a new IV (int64 / string).'''
-        
+
         self.c = self.start_c[:]
         self.x = self.start_x[:]
         self.b = self.start_b
         self._buf = 0
         self._buf_bytes = 0
-        if iv != None:
+        if iv is not None:
             self.set_iv(iv)
 
     def set_iv(self, iv):
@@ -89,7 +99,7 @@ class Rabbit:
         i2 = iv >> 32
         i1 = ((i0 >> 16) | (i2 & 0xFFFF0000)) % WORDSIZE
         i3 = ((i2 << 16) | (i0 & 0x0000FFFF)) % WORDSIZE
-        
+
         c[0] ^= i0
         c[1] ^= i1
         c[2] ^= i2
@@ -103,11 +113,10 @@ class Rabbit:
         self.next()
         self.next()
         self.next()
-        
 
     def next(self):
         '''Proceed to the next internal state'''
-        
+
         c = self.c
         x = self.x
         b = self.b
@@ -129,9 +138,9 @@ class Rabbit:
         t = c[7] + 0xD34D34D3 + t // WORDSIZE
         c[7] = t % WORDSIZE
         b = t // WORDSIZE
-        
+
         g = [_nsf(x[j], c[j]) for j in xrange(8)]
-        
+
         x[0] = (g[0] + rot16(g[7]) + rot16(g[6])) % WORDSIZE
         x[1] = (g[1] + rot08(g[0]) + g[7]) % WORDSIZE
         x[2] = (g[2] + rot16(g[1]) + rot16(g[0])) % WORDSIZE
@@ -140,34 +149,32 @@ class Rabbit:
         x[5] = (g[5] + rot08(g[4]) + g[3]) % WORDSIZE
         x[6] = (g[6] + rot16(g[5]) + rot16(g[4])) % WORDSIZE
         x[7] = (g[7] + rot08(g[6]) + g[5]) % WORDSIZE
-        
+
         self.b = b
         return self
 
-
     def derive(self):
         '''Derive a 128 bit integer from the internal state'''
-        
+
         x = self.x
         return ((x[0] & 0xFFFF) ^ (x[5] >> 16)) | \
-               (((x[0] >> 16) ^ (x[3] & 0xFFFF)) << 16)| \
-               (((x[2] & 0xFFFF) ^ (x[7] >> 16)) << 32)| \
-               (((x[2] >> 16) ^ (x[5] & 0xFFFF)) << 48)| \
-               (((x[4] & 0xFFFF) ^ (x[1] >> 16)) << 64)| \
-               (((x[4] >> 16) ^ (x[7] & 0xFFFF)) << 80)| \
-               (((x[6] & 0xFFFF) ^ (x[3] >> 16)) << 96)| \
+               (((x[0] >> 16) ^ (x[3] & 0xFFFF)) << 16) | \
+               (((x[2] & 0xFFFF) ^ (x[7] >> 16)) << 32) | \
+               (((x[2] >> 16) ^ (x[5] & 0xFFFF)) << 48) | \
+               (((x[4] & 0xFFFF) ^ (x[1] >> 16)) << 64) | \
+               (((x[4] >> 16) ^ (x[7] & 0xFFFF)) << 80) | \
+               (((x[6] & 0xFFFF) ^ (x[3] >> 16)) << 96) | \
                (((x[6] >> 16) ^ (x[1] & 0xFFFF)) << 112)
 
-    
     def keystream(self, n):
         '''Generate a keystream of n bytes'''
-        
+
         res = ""
         b = self._buf
         j = self._buf_bytes
         next = self.next
         derive = self.derive
-        
+
         for i in xrange(n):
             if not j:
                 j = 16
@@ -181,10 +188,9 @@ class Rabbit:
         self._buf_bytes = j
         return res
 
-
     def encrypt(self, data):
         '''Encrypt/Decrypt data of arbitrary length.'''
-        
+
         res = ""
         b = self._buf
         j = self._buf_bytes
@@ -204,15 +210,14 @@ class Rabbit:
         return res
 
     decrypt = encrypt
-        
-    
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
 
     import time
 
     # --- Official Test Vectors ---
-    
+
     # RFC 4503 Appendix A.1 - Testing without IV Setup
 
     r = Rabbit(0)
@@ -226,7 +231,7 @@ if __name__ == "__main__":
     assert r.next().derive() == 0xE5547473FBDB43508AE53B20204D4C5E
 
     r = Rabbit(0x8395741587E0C733E9E9AB01C09B0043)
-    assert r.next().derive() == 0x0CB10DCDA041CDAC32EB5CFD02D0609B 
+    assert r.next().derive() == 0x0CB10DCDA041CDAC32EB5CFD02D0609B
     assert r.next().derive() == 0x95FC9FCA0F17015A7B7092114CFF3EAD
     assert r.next().derive() == 0x9649E5DE8BFC7F3F924147AD3A947428
 
@@ -247,24 +252,26 @@ if __name__ == "__main__":
     assert r.next().derive() == 0x96C8F27947F42C5BAEAE67C6ACC35B03
     assert r.next().derive() == 0x9FCBFC895FA71C17313DF034F01551CB
 
-
     # --- Performance Tests ---
 
-    def test_gen(n = 1048576):
+    def test_gen(n=1048576):
         '''Measure time for generating n bytes => (total, bytes per second)'''
-        
+
         r = Rabbit(0)
         t = time.time()
         r.keystream(n)
         t = time.time() - t
         return t, n / t
 
-    def test_enc(n = 1048576):
+    def test_enc(n=1048576):
         '''Measure time for encrypting n bytes => (total, bytes per second)'''
-        
+
         r = Rabbit(0)
         x = 'x' * n
         t = time.time()
         r.encrypt(x)
         t = time.time() - t
         return t, n / t
+
+    print(test_gen())
+    print(test_enc())
