@@ -359,6 +359,7 @@ if __name__ == "__main__":
     import random
 
     t = time.time()
+    # note: we could also use .primes.get_prime(256/8, 20)
     n = rsa.prime.getprime(256)
     tp = time.time() - t
     p = random.randint(1, n)
@@ -374,6 +375,7 @@ if __name__ == "__main__":
     tt = time.time() - t
 
     def test(tcount, bits=256):
+        # note: we could also use .primes.get_prime(256/8, 20)
         n = rsa.prime.getprime(bits)
         p = random.randint(1, n)
         p1 = (random.randint(1, n), random.randint(1, n))
