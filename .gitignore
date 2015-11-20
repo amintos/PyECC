@@ -25,3 +25,6 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+# 2to3.py
+/ecc/*.bak
